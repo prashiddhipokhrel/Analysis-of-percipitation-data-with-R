@@ -1,0 +1,45 @@
+##linear regression between rain and the temperature ###
+mydata1 = read.csv("rain1.csv")
+mydata2 = read.csv("temperature.csv")
+head(mydata1)
+head(mydata2)
+## checking the relationship between annual rainfall and temperature ###
+x = mydata2$Annual ### temp
+y = mydata1$Annual ### rain
+fit = lm(y~x)
+summary(fit)
+### generating residuals ##
+res <- resid(fit)
+summary(res)
+### calculating the fit values ###
+fitval <- fit$fitted.values
+### analysing the residual ##
+## checking the normality of residuals ##
+qqnorm(res, xlab = "expected", ylab = "residual", main = "normal probability plot", pch = 18, col = "black")
+qqline(res, col = "red")
+## conducting the shapiro-wilk test ###
+shapiro.test(res)
+### correlation  ###
+cor(x,y)
+#start of the time series analysis code
+plot(mm$Year, mm$value, xlab = "Date", ylab = "Precipitation in inches", main = "Maine Monthly Precipitation", pch = 8)
+ts_rain <- ts(mm['value'], start = c(1991, 1), end = c(2020, 12), frequency = 12) #save data as ts
+seasonplot(ts_rain, 12, col = rainbow(12), xlab = “Month", ylab = “Precipitation in Inches", main = “Seasonal Plot of Maine Precipitation")
+ts.plot(ts_rain, xlab = “Date", ylab = “Precipitation", main = “ME Monthly Precipitation Time Series, 1991-2020")
+acf(ts_rain, main=“Autocorrelation Plot of Precipitation")
+install.packages("tseries")
+library(tseries)
+adf.test(ts_rain)
+fit <- arima(ts_rain, order = c(8, 1, 12))
+summary(fit)
+install.packages("forecast")
+library(forecast)
+forecast(fit, 60)
+fc <- forecast(fit, 60)
+max(fc$mean)  #4.814643 - oct 2021
+min(fc$mean)  #3.635703 - april 2022
+plot(forecast(fit, 60), xlab = “Date", ylab = “Precipitation in Inches", main = “Forecasted Precipitation")
+points(2021, 4.814643, col = 'red', pch = 8, lty = 3)
+points(2022, 3.635703, col = 'yellow', pch = 8, lty = 3)
+legend(2000, 10, legend = c("forecast", "max predicted value", "min predicted value"),
+lty = c(1, NA, NA), pch = c(NA, 8, 8), col = c("blue", "red", "yellow"), xjust = 0.5, yjust = 0.5)
