@@ -1,0 +1,104 @@
+#read in data and process it to make it usable for our purposes
+library(tidyverse)
+library(dplyr)
+rain <- read.csv(“path to precipitation.csv", skip = 8, header = true)
+rain.all <- rain[1:30, 1:14]
+rain1 <- rain.all[1:30, 1:13]
+#change from chr to num
+rain1 <- lapply(rain1, as.numeric)
+sapply(rain1, class)
+rain1 <- data.frame(rain1)
+install.packages('reshape2')
+library(reshape2)
+mm <- melt(rain1, id = 'year’) #this turns the data frame into a vector with values arranged by date
+raindata = mm
+cols.num <- "value"
+raindata[cols.num] <- sapply(raindata[cols.num], as.numeric)
+str(raindata)
+#re-label data fields
+colnames(raindata) = c("year", "month", "rainfall")
+summary(mm$value)
+annual <- rain.all['Annual']
+year <- rain.all['Year']
+df <- data.frame(year, annual)
+plot(df, xlab='Year', ylab='Annual Precipitation', type='l', col='blue', main="Annual Precipitation in ME, 1991-2020")
+# average rainfall by month
+raindata %>% group_by(month) %>%
+summary(AverageRainfall = mean(rainfall))
+# total rainfall by month
+raindata %>% group_by(month) %>%
+summary(TotalRainfall = sum(rainfall))
+tapply(raindata$rainfall, raindata$month, min)
+tapply(raindata$rainfall, raindata$month, max)
+#box plots by month
+plot(raindata$month,raindata$rainfall, col = "lightblue", xlab =“Month", ylab=“Rainfall", main = “Monthly Rainfall")
+#box plots by year
+plot(raindata$year,raindata$rainfall, col = "red", xlab =“Year", ylab=“Rainfall", main = “Yearly Rainfall")
+rain1 <- rain.all[1:30,1:13] #to make histograms by year we need to transpose the data
+t_rain <- t(rain1)
+par(mfrow = c(3, 5))
+hist(t_rain[2:13, 1], breaks=seq(0, 10, by=2), xlab="", main="1991")
+hist(t_rain[2:13, 3], breaks=seq(0, 10, by=2), xlab="", ylab="", main="1993")
+hist(t_rain[2:13, 5], breaks=seq(0, 10, by=2), xlab="", ylab="", main="1995")
+hist(t_rain[2:13, 7], breaks=seq(0, 10, by=2), xlab="", ylab="", main="1997")
+hist(t_rain[2:13, 9], breaks=seq(0, 10, by=2), xlab="", ylab="", main="1999")
+hist(t_rain[2:13, 11], breaks=seq(0, 10, by=2), xlab="", main="2001")
+hist(t_rain[2:13, 13], breaks=seq(0, 10, by=2), xlab="", ylab="", main="2003")
+hist(t_rain[2:13, 15], breaks=seq(0, 10, by=2), xlab="", ylab="", main="2005")
+hist(t_rain[2:13, 17], breaks=seq(0, 10, by=2), xlab="", ylab="", main="2007")
+hist(t_rain[2:13, 19], breaks=seq(0, 10, by=2), xlab="", ylab="", main="2009")
+hist(t_rain[2:13, 21], breaks=seq(0, 10, by=2), xlab="", ylab="", main="2011")
+hist(t_rain[2:13, 23], breaks=seq(0, 10, by=2), xlab="Precipitation in Inches", main="2013")
+hist(t_rain[2:13, 25], breaks=seq(0, 10, by=2), xlab="Precipitation in Inches", ylab="",main="2015")
+hist(t_rain[2:13, 27], breaks=seq(0, 10, by=2), xlab="Precipitation in Inches", ylab="",main="2017")
+hist(t_rain[2:13, 29], breaks=seq(0, 10, by=2), xlab="Precipitation in Inches", ylab="",main="2019")
+hist(t_rain[2:13, 30], breaks=seq(0, 10, by=2), xlab="Precipitation in Inches", ylab="",main="2020")
+### Linear Regression ## 
+##linear regression between rain and the temperature ###
+mydata1 = read.csv("rain1.csv")
+mydata2 = read.csv("temperature.csv")
+head(mydata1)
+head(mydata2)
+## checking the relationship between annual rainfall and temperature ###
+x = mydata2$Annual ### temp
+y = mydata1$Annual ### rain
+fit = lm(y~x)
+summary(fit)
+### generating residuals ##
+res <- resid(fit)
+summary(res)
+### calculating the fit values ###
+fitval <- fit$fitted.values
+### analysing the residual ##
+## checking the normality of residuals ##
+qqnorm(res, xlab = "expected", ylab = "residual", main = "normal probability plot", pch = 18, col = "black")
+qqline(res, col = "red")
+## conducting the shapiro-wilk test ###
+shapiro.test(res)
+### correlation  ###
+cor(x,y)
+#start of the time series analysis code
+plot(mm$Year, mm$value, xlab = "Date", ylab = "Precipitation in inches", main = "Maine Monthly Precipitation", pch = 8)
+ts_rain <- ts(mm['value'], start = c(1991, 1), end = c(2020, 12), frequency = 12) #save data as ts
+seasonplot(ts_rain, 12, col = rainbow(12), xlab = “Month", ylab = “Precipitation in Inches", main = “Seasonal Plot of Maine Precipitation")
+ts.plot(ts_rain, xlab = “Date", ylab = “Precipitation", main = “ME Monthly Precipitation Time Series, 1991-2020")
+acf(ts_rain, main=“Autocorrelation Plot of Precipitation")
+install.packages("tseries")
+library(tseries)
+adf.test(ts_rain)
+fit <- arima(ts_rain, order = c(8, 1, 12))
+summary(fit)
+install.packages("forecast")
+library(forecast)
+forecast(fit, 60)
+fc <- forecast(fit, 60)
+max(fc$mean)  #4.814643 - oct 2021
+min(fc$mean)  #3.635703 - april 2022
+plot(forecast(fit, 60), xlab = “Date", ylab = “Precipitation in Inches", main = “Forecasted Precipitation")
+points(2021, 4.814643, col = 'red', pch = 8, lty = 3)
+points(2022, 3.635703, col = 'yellow', pch = 8, lty = 3)
+legend(2000, 10, legend = c("forecast", "max predicted value", "min predicted value"),
+lty = c(1, NA, NA), pch = c(NA, 8, 8), col = c("blue", "red", "yellow"), xjust = 0.5, yjust = 0.5)
+
+
+
